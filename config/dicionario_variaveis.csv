@@ -1,0 +1,55 @@
+nome_legivel,coluna_dhis2,descricao,usado_na_qualidade
+record_id,psi,Identificador do evento,sim
+program_stage_id,ps,Identificador da etapa do programa,não
+event_date,eventdate,Data do registo,sim
+stored_by,storedby,Utilizador que armazenou o evento,não
+created_by,createdbydisplayname,Utilizador que criou o evento,não
+updated_by,lastupdatedbydisplayname,Utilizador da última actualização,não
+last_updated,lastupdated,Data e hora da última actualização,sim
+scheduled_date,scheduleddate,Data programada,não
+enrollment_date,enrollmentdate,Data de inscrição,não
+incident_date,incidentdate,Data do incidente,não
+tracked_entity_id,tei,Identificador da entidade rastreada,não
+enrollment_id,pi,Identificador da inscrição,não
+geometry,geometry,Geometria do evento,não
+longitude,longitude,Longitude,não
+latitude,latitude,Latitude,não
+facility,ouname,Unidade sanitária,sim
+organisation_hierarchy,ounamehierarchy,Hierarquia organizacional,sim
+facility_code,oucode,Código da unidade sanitária,não
+facility_id,ou,Identificador da unidade sanitária,não
+program_status,programstatus,Estado do programa,não
+event_status,eventstatus,Estado do evento,sim
+fever,oNN1FVNaV4r.eMVytXtuMWh,Tem febre,não
+requested_test,oNN1FVNaV4r.mtkN9C1BJX4,Exame ou teste solicitado,sim
+first_name,ENRjVGxVL6l,Nome próprio - campo sensível,não
+age_group,MZeTF32uOUD,Faixa etária,sim
+diagnosis,oNN1FVNaV4r.nRdPCxj7d9z,Diagnóstico,sim
+occupation,Q1NM5BSIxl0,Profissão - campo sensível,não
+surname,sB1IHYu2xQT,Apelido - campo sensível,não
+group_code,ANXuo6saopx,Código do grupo,não
+care_action,oNN1FVNaV4r.F4XfAlCCrf2,Conduta ou seguimento,condicional
+consultation_type,oNN1FVNaV4r.kP29shPSHl8,Tipo de consulta,sim
+community_actor_group,VCtm2pySeEV,Actor ou grupo comunitário,condicional
+vulnerable_group,oNN1FVNaV4r.BsKcBDC0kSq,Grupo vulnerável,condicional
+sex,CklPZdOd6H1,Sexo,sim
+other_test,oNN1FVNaV4r.rLDcMERXNrS,Outro teste especificado,condicional
+received_treatment,oNN1FVNaV4r.sh6WSMuKbof,Recebeu tratamento,sim
+test_result,oNN1FVNaV4r.exTgdok33ph,Resultado do teste,sim
+test_status,oNN1FVNaV4r.teO9EjrYeF6,Estado do teste,sim
+outcome,oNN1FVNaV4r.HG5ltiCtn1D,Desfecho,sim
+vulnerable_population,oNN1FVNaV4r.vK9PPhCrA6Q,População vulnerável,condicional
+community_referral,oNN1FVNaV4r.M9GNJpUsAeT,Referido pela comunidade,condicional
+other_diagnosis,oNN1FVNaV4r.vrJV8duHFUy,Outro diagnóstico especificado,condicional
+rash_generalized,CONFIGURAR_UID,Erupção maculopapular generalizada - opcional OMS,não
+cough,CONFIGURAR_UID,Tosse - opcional OMS,não
+coryza,CONFIGURAR_UID,Coriza - opcional OMS,não
+conjunctivitis,CONFIGURAR_UID,Conjuntivite - opcional OMS,não
+clinician_suspects_measles,CONFIGURAR_UID,Profissional suspeita de sarampo - opcional OMS,não
+rash_onset_date,CONFIGURAR_UID,Data de início da erupção - opcional OMS,não
+measles_igm_result,CONFIGURAR_UID,Resultado IgM de sarampo - opcional OMS,não
+measles_pcr_result,CONFIGURAR_UID,Resultado PCR de sarampo - opcional OMS,não
+epidemiological_link,CONFIGURAR_UID,Ligação epidemiológica - opcional OMS,não
+acute_watery_diarrhoea,CONFIGURAR_UID,Diarreia aquosa aguda - opcional OMS,não
+severe_dehydration,CONFIGURAR_UID,Desidratação grave - opcional OMS,não
+symptom_onset_date,CONFIGURAR_UID,Data de início dos sintomas - opcional OMS,não

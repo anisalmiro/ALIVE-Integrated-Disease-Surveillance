@@ -1,0 +1,63 @@
+# ============================================================
+# Docker Compose para o Painel ALIVE
+# ============================================================
+#
+# Uso:
+# docker-compose up -d
+#
+# Parar:
+# docker-compose down
+#
+# Ver logs:
+# docker-compose logs -f painel-alive
+#
+# ============================================================
+
+version: '3.8'
+
+services:
+  painel-alive:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    container_name: painel-alive
+    
+    # Portas - mapear 3838 do contentor para 3838 do host
+    ports:
+      - "3838:3838"
+    
+    # Variáveis de ambiente para credenciais DHIS2
+    environment:
+      # ⚠️  SEGURANÇA: Defina estas variáveis no ficheiro .env
+      DHIS2_USERNAME: ${DHIS2_USERNAME}
+      DHIS2_PASSWORD: ${DHIS2_PASSWORD}
+      TZ: Africa/Maputo
+    
+    # Volumes para persistência de dados
+    volumes:
+      # Dados processados
+      - ./data-raw:/srv/shiny-server/painel-alive/data-raw
+      # Logs da aplicação
+      - ./logs:/srv/shiny-server/painel-alive/logs
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3838"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Limites de recursos (opcional)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G

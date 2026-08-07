@@ -1,0 +1,36 @@
+# Credenciais e variáveis de ambiente
+.Renviron
+.Rdata
+.Rhistory
+.RData
+
+# IDE e editores
+.Rproj.user
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Pacotes R
+*.tar.gz
+
+# Dados sensíveis
+dados_processados.csv
+data-raw/dados_processados.csv
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs e temporários
+*.log
+tmp/
+temp/
+
+# Deployments
+rsconnect/
+
+# Ficheiros Mac
+.AppleDouble
+.LSOverride

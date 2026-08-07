@@ -1,0 +1,19 @@
+# ============================================================
+# CONFIGURAÇÃO DE CREDENCIAIS DO DHIS2
+# ============================================================
+#
+# INSTRUÇÕES:
+# 1. Copie este ficheiro e renomeie para ".Renviron"
+# 2. Preencha com as suas credenciais DHIS2
+# 3. Guarde na raiz do projecto (mesmo nível que app.R)
+# 4. O R carregará automaticamente ao iniciar
+#
+# ⚠️  SEGURANÇA:
+# - Nunca faça commit do ficheiro .Renviron no Git
+# - O ficheiro .Renviron já está no .gitignore
+# - Cada utilizador deve ter o seu próprio .Renviron
+#
+# ============================================================
+
+DHIS2_USERNAME=seu_utilizador_aqui
+DHIS2_PASSWORD=sua_palavra_passe_aqui
