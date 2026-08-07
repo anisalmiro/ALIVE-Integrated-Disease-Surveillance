@@ -697,8 +697,11 @@ server <- function(input, output, session) {
   #Map cases 
   output$disease_map <- leaflet::renderLeaflet({
     
-    # 1. Carregar e preparar as coordenadas geográficas do SARA
-    sara_geo_data <- readr::read_csv("data-raw/Coordenadas_Geograficas_SARA.csv", show_col_types = FALSE) %>%
+    # 1. Load and prepare SARA geographic coordinates
+    sara_geo_data <- readr::read_csv(
+      "data-raw/Coordenadas_Geograficas_SARA.csv", 
+      show_col_types = FALSE
+    ) %>%
       dplyr::mutate(
         SIS_CODE = as.character(SIS_CODE),
         latitude = as.numeric(Lat),
@@ -707,59 +710,102 @@ server <- function(input, output, session) {
       dplyr::select(SIS_CODE, latitude, longitude) %>%
       dplyr::distinct(SIS_CODE, .keep_all = TRUE)
     
-    # 2. Obter os dados filtrados ou usar hpt_data
+    # 2. Extract active reactive dataset or fallback to hpt_data
     df_raw <- if (exists("filtered_data") && is.reactive(filtered_data)) filtered_data() else hpt_data
     
     if (is.null(df_raw) || nrow(df_raw) == 0) return(NULL)
     
-    # 3. Agrupar e contar casos por Unidade Sanitária
-    cases_by_facility <- df_raw %>%
-      dplyr::mutate(facility_code = as.character(facility_code)) %>%
+    # 3. Dynamic Column Matching for Disease/Diagnosis Name
+    possible_disease_cols <- c("disease", "doenca", "diagnostico", "agravo", "patologia", "disease_name")
+    matched_col <- intersect(possible_disease_cols, names(df_raw))[1]
+    
+    if (!is.na(matched_col)) {
+      df_raw <- df_raw %>% 
+        dplyr::mutate(disease = as.character(.data[[matched_col]]))
+    } else {
+      df_raw$disease <- "Não Especificado"
+    }
+    
+    # 4. Group and count cases by Health Facility AND Disease
+    cases_by_facility_disease <- df_raw %>%
+      dplyr::mutate(
+        facility_code = as.character(facility_code),
+        disease = dplyr::coalesce(disease, "Não Especificado")
+      ) %>%
       dplyr::filter(!is.na(facility_code)) %>%
-      dplyr::group_by(facility_code) %>%
+      dplyr::group_by(facility_code, disease) %>%
       dplyr::summarise(
         total_cases = dplyr::n(),
         facility_name = dplyr::first(facility),
         .groups = "drop"
       )
     
-    # 4. Fazer JOIN dos casos com as coordenadas do SARA
-    map_data <- cases_by_facility %>%
+    # 5. Join aggregated cases with SARA coordinates
+    map_data <- cases_by_facility_disease %>%
       dplyr::left_join(sara_geo_data, by = c("facility_code" = "SIS_CODE")) %>%
       dplyr::filter(!is.na(latitude) & !is.na(longitude))
     
     if (nrow(map_data) == 0) return(NULL)
     
-    # 5. Definir paleta de cores para as bolhas
-    pal <- leaflet::colorNumeric(
-      palette = "Viridis",
-      domain = map_data$total_cases
+    # 6. Define Categorical Color Palette for Diseases
+    unique_diseases <- unique(map_data$disease)
+    pal_disease <- leaflet::colorFactor(
+      palette = "Set1", # Options: "Set1", "Set2", "Dark2", "Paired"
+      domain = unique_diseases
     )
     
-    # 6. Criar o Mapa com Leaflet
+    # Helper function for number formatting
+    format_num <- function(x) {
+      if (exists("fmt_number", mode = "function")) fmt_number(x) else format(x, big.mark = " ")
+    }
+    
+    # 7. Render Leaflet Map
     leaflet::leaflet(map_data) %>%
-      leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron) %>% # Tile limpa sem necessidade de Token
+      # Add multiple base map options
+      leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron, group = "Light (CartoDB)") %>%
+      leaflet::addProviderTiles(leaflet::providers$OpenStreetMap, group = "OpenStreetMap") %>%
+      leaflet::addProviderTiles(leaflet::providers$CartoDB.DarkMatter, group = "Dark (CartoDB)") %>%
+      leaflet::addProviderTiles(leaflet::providers$Esri.WorldImagery, group = "Satélite (Esri)") %>%
+      
+      # Add circle markers colored by disease
       leaflet::addCircleMarkers(
         lng = ~longitude,
         lat = ~latitude,
-        radius = ~scales::rescale(total_cases, to = c(6, 20)), # Tamanho proporcional
-        color = ~pal(total_cases),
-        fillOpacity = 0.7,
+        radius = ~scales::rescale(total_cases, to = c(6, 22)),
+        color = ~pal_disease(disease),
+        fillColor = ~pal_disease(disease),
+        fillOpacity = 0.75,
         stroke = TRUE,
-        weight = 1,
+        weight = 1.5,
         popup = ~paste0(
-          "<b>US: </b>", dplyr::coalesce(facility_name, "N/A"), "<br>",
+          "<div style='font-family: sans-serif; font-size: 13px;'>",
+          "<b>Unidade Sanitária: </b>", dplyr::coalesce(facility_name, "N/A"), "<br>",
           "<b>Código US: </b>", facility_code, "<br>",
-          "<b>Total de Casos: </b>", fmt_number(total_cases)
+          "<b>Doença / Agravo: </b><span style='color:", pal_disease(disease), ";font-weight:bold;'>", disease, "</span><br>",
+          "<b>Total de Casos: </b>", sapply(total_cases, format_num),
+          "</div>"
         )
       ) %>%
+      
+      # Add Disease Legend
       leaflet::addLegend(
-        pal = pal,
-        values = ~total_cases,
-        title = "Casos",
-        position = "bottomright"
+        pal = pal_disease,
+        values = ~disease,
+        title = "Doença / Agravo",
+        position = "bottomright",
+        opacity = 0.9
+      ) %>%
+      
+      # Add Map Selector Control
+      leaflet::addLayersControl(
+        baseGroups = c("Light (CartoDB)", "OpenStreetMap", "Dark (CartoDB)", "Satélite (Esri)"),
+        options = leaflet::layersControlOptions(collapsed = FALSE),
+        position = "topright"
       )
   })
+  
+  
+  #fim Mapa
 
 
   output$facility_monitor_table <- DT::renderDT({
