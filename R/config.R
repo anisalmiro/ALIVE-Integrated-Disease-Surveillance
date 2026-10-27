@@ -3,12 +3,44 @@
 # Projecto ALIVE — WP2 (DHIS2 Tracker)
 # ============================================================
 
+# Convenção centralizada para caminhos de dados. Mantém a compatibilidade com
+# as variáveis de ambiente existentes e facilita a manutenção em produção.
+resolve_data_path <- function(env_var, default_file) {
+  value <- Sys.getenv(env_var, unset = default_file)
+  if (is.null(value) || length(value) == 0 || !nzchar(value)) {
+    value <- default_file
+  }
+  value
+}
+
 # Caminho padrão. Também pode ser definido antes de iniciar o painel:
 # Sys.setenv(MONITORIA_DATA_PATH = "caminho/para/o/ficheiro.csv")
-DATA_PATH <- Sys.getenv(
-  "MONITORIA_DATA_PATH",
-  unset = file.path("data-raw", "dados_processados.csv")
+DATA_PATH <- resolve_data_path(
+  env_var = "MONITORIA_DATA_PATH",
+  default_file = file.path("data-raw", "dados_processados.csv")
 )
+
+AGREGADOS_DATA_PATH <- resolve_data_path(
+  env_var = "AGREGADOS_DATA_PATH",
+  default_file = file.path("data-raw", "AGREGADOS.csv")
+)
+
+SARA_GEO_DATA_PATH <- resolve_data_path(
+  env_var = "SARA_GEO_DATA_PATH",
+  default_file = file.path("data-raw", "Coordenadas_Geograficas_SARA.csv")
+)
+
+
+# Basemap do módulo de risco (Leaflet usa raster tiles)
+CARTO_RASTER_TEMPLATE <- Sys.getenv(
+  "CARTO_RASTER_TEMPLATE",
+  unset = "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
+)
+CARTO_API_KEY <- Sys.getenv(
+  "CARTO_API_KEY",
+  unset = "cb1_3v96_1_ee046544cb05ea2f1d83c753"
+)
+
 
 # Fuso horário usado para interpretar as datas do DHIS2.
 APP_TIMEZONE <- "Africa/Maputo"
@@ -179,6 +211,5 @@ SAFE_EXPORT_COLUMNS <- c(
   "severity", "issue_detail"
 )
 
-
-#read data from data-raw/AGREGADOS.csv and store as dados_agre_badplus  
-dados <- read.csv("data-raw/AGREGADOS.csv", stringsAsFactors = FALSE)
+# A leitura de ficheiros CSV é centralizada em funções de apoio para evitar
+# efeitos laterais e facilitar a manutenção futura do painel.

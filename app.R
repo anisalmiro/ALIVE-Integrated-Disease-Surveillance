@@ -31,9 +31,9 @@ if (!requireNamespace("terra", quietly = TRUE) || packageVersion("terra") > "1.7
       "data-raw/dados_processados.csv",
       "data-raw/AGREGADOS.csv",
       "data-raw/Coordenadas_Geograficas_SARA.csv",
-      "gerar_relatorio_sem_painel.R",
-      "renv.lock"
+      "gerar_relatorio_sem_painel.R"
     ),
+    dependencyResolution = "library",
     forceUpdate = TRUE
   )
 

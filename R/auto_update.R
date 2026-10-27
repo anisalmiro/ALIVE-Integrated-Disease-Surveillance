@@ -191,11 +191,11 @@ schedule_auto_update <- function() {
   if (status) {
     cat("--> Download concluído com sucesso. Aguardando 1 hora para o próximo ciclo...\n")
   } else {
-    cat("--> Falha no download. Tentando novamente em 1 hora...\n")
+    cat("--> Falha no download. Tentando novamente em 5 horas...\n")
   }
   
   # Re-agenda para rodar daqui a 1 hora (3600 segundos) sem bloquear runApp()
-  later::later(schedule_auto_update, 3600)
+  later::later(schedule_auto_update, 5 * 3600)
 }
 
 # Iniciar o ciclo

@@ -19,108 +19,115 @@ panel_box <- function(..., title = NULL, width = 12, status = NULL, solid_header
 
 app_css <- "
 :root {
-  /* ALIVE Logo Color Palette */
-  --primary: #0277bd;        /* Ocean Blue (ALIVE Text) */
-  --primary-dark: #01579b;   /* Dark Blue (Header/Menu) */
-  --secondary: #00838f;      /* Dark Cyan */
-  --accent: #7cb342;          /* Leaf Green (Logo Accent) */
-  --accent-light: #aed581;   /* Light Green for hover highlights */
-  --blue-light: #e1f5fe;     /* Soft background for cards/banners */
-  --amber: #f57c00;          /* Warnings / Alerts */
-  --red: #d32f2f;            /* Critical Alerts */
-  --ink: #0c273a;            /* Primary Text */
-  --muted: #546e7a;          /* Secondary Text */
-  --page: #f4f8fb;           /* Page Background */
+  --primary: #5b8def;
+  --primary-dark: #3b67c8;
+  --secondary: #7ad8d0;
+  --accent: #8fcd88;
+  --accent-light: #eaf9ec;
+  --blue-light: #edf6ff;
+  --amber: #f3b76b;
+  --red: #ee7d7d;
+  --ink: #20314a;
+  --muted: #5e7286;
+  --page: #f5f8fc;
+  --panel: #ffffff;
+  --panel-border: #e6eef7;
 }
 
-.content-wrapper, .right-side { background-color: var(--page); }
+.content-wrapper, .right-side { background: linear-gradient(180deg, #f7f9fd 0%, #f1f6fb 100%); }
 
-/* Main Top Header */
-.main-header .logo { 
-  background-color: var(--primary-dark) !important; 
+.main-header .logo {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary)) !important;
   color: #ffffff !important;
-  font-weight: 800; 
+  font-weight: 800;
 }
-.main-header .navbar { 
-  background-color: var(--primary) !important; 
+.main-header .navbar {
+  background: linear-gradient(135deg, var(--primary), #7ba3ff) !important;
+  box-shadow: 0 1px 0 rgba(35, 68, 120, 0.08);
 }
 
-/* Deep Blue Sidebar */
-.skin-blue .main-sidebar { 
-  background-color: #0a2540 !important; 
+.skin-blue .main-sidebar {
+  background: linear-gradient(180deg, #10263f 0%, #173a5d 100%) !important;
 }
 .skin-blue .sidebar-menu > li.active > a,
-.skin-blue .sidebar-menu > li:hover > a { 
-  border-left-color: var(--accent) !important; 
-  background: #11385d !important; 
+.skin-blue .sidebar-menu > li:hover > a {
+  border-left-color: var(--accent) !important;
+  background: rgba(110, 161, 255, 0.18) !important;
   color: #ffffff !important;
 }
 .sidebar-section-title {
-  color: #81d4fa; 
-  text-transform: uppercase; 
+  color: #cfe8ff;
+  text-transform: uppercase;
   font-size: 10px;
-  letter-spacing: .11em; 
-  font-weight: 800; 
+  letter-spacing: .12em;
+  font-weight: 800;
   padding: 14px 15px 6px;
 }
 .sidebar .form-group { padding: 0 12px; margin-bottom: 11px; }
-.sidebar label { color: #e0f7fa; font-size: 12px; }
+.sidebar label { color: #edf7ff; font-size: 12px; }
 .sidebar .selectize-input, .sidebar .form-control { font-size: 12px; }
 .sidebar .btn { width: calc(100% - 24px); margin: 4px 12px; }
+.main-header .dropdown { padding: 8px 14px 0 0; }
+.main-header .dropdown .form-group { margin-bottom: 0; }
+.main-header .dropdown .selectize-input, .main-header .dropdown .form-control {
+border-radius: 999px; border: 1px solid rgba(255,255,255,0.65); background: rgba(255,255,255,0.12); color: #fff; min-height: 30px; font-size: 12px;
+}
+.main-header .dropdown .selectize-input input { color: #fff; }
+.main-header .dropdown .selectize-control.single .selectize-input:after { border-color: #fff transparent transparent transparent; }
 
-/* Titles and Subtitles */
 .dashboard-title { color: var(--ink); font-weight: 800; margin: 4px 0 2px; }
 .dashboard-subtitle { color: var(--muted); margin-bottom: 16px; }
 
-/* Top Information Banner */
 .data-banner {
   display: flex; justify-content: space-between; gap: 12px; align-items: center;
-  background: var(--blue-light); border: 1px solid #b3e5fc; border-radius: 9px;
-  padding: 10px 14px; margin-bottom: 14px; color: var(--primary-dark);
+  background: linear-gradient(180deg, #edf6ff 0%, #f4f9ff 100%);
+  border: 1px solid #cfe0f8;
+  border-radius: 12px;
+  padding: 12px 16px; margin-bottom: 14px; color: var(--primary-dark);
+  box-shadow: 0 8px 18px rgba(67, 108, 175, 0.06);
 }
 
-/* KPI Cards with Leaf Green Left Accent */
 .kpi-grid {
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 13px; margin-bottom: 13px;
 }
 .kpi-card {
-  min-height: 112px; background: #fff; border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(2, 119, 189, .08); 
+  min-height: 118px; background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border-radius: 14px; border: 1px solid var(--panel-border);
+  box-shadow: 0 10px 24px rgba(38, 88, 154, 0.08);
   border-left: 5px solid var(--accent);
   padding: 15px 16px; display: flex; align-items: center; justify-content: space-between;
 }
 .kpi-title { color: var(--muted); text-transform: uppercase; letter-spacing: .055em; font-size: 11px; font-weight: 800; }
-.kpi-value { color: var(--ink); font-size: 30px; font-weight: 800; line-height: 1.08; margin-top: 5px; }
+.kpi-value { color: var(--ink); font-size: 30px; font-weight: 800; line-height: 1.08; margin-top: 6px; }
 .kpi-note { color: var(--muted); font-size: 11px; margin-top: 5px; }
-.kpi-icon { color: var(--accent); opacity: .88; font-size: 28px; margin-left: 12px; }
+.kpi-icon { color: var(--accent); opacity: .95; font-size: 28px; margin-left: 12px; }
 
-/* Box Containers */
-.content .box { border-top: 3px solid var(--primary); border-radius: 10px; box-shadow: 0 2px 8px rgba(2, 119, 189, .07); }
+.content .box {
+  border-top: 3px solid var(--primary); border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(38, 88, 154, 0.08);
+  border: 1px solid var(--panel-border);
+}
 .content .box > .box-header { padding: 14px 14px 7px; }
 .content .box > .box-header .box-title { color: var(--ink); font-weight: 750; font-size: 15px; }
 .content .box > .box-body { padding: 12px 14px 15px; }
 
-.automatic-summary { font-size: 14px; line-height: 1.65; color: #1c3b57; }
-.automatic-summary strong { color: var(--primary); }
+.automatic-summary { font-size: 14px; line-height: 1.65; color: #1d3557; }
+.automatic-summary strong { color: var(--primary-dark); }
 
-.method-card { background: #fff; border: 1px solid #d0e1fd; border-radius: 9px; padding: 15px; margin-bottom: 12px; }
+.method-card { background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%); border: 1px solid #dfeaf8; border-radius: 11px; padding: 15px; margin-bottom: 12px; }
 .method-card h4 { margin-top: 0; color: var(--ink); font-weight: 750; }
 .method-card li { margin-bottom: 7px; }
 
-.privacy-note { background: #fff8e6; border-left: 4px solid var(--amber); padding: 11px 13px; border-radius: 5px; }
+.privacy-note { background: linear-gradient(180deg, #fff9ee 0%, #fff5df 100%); border-left: 4px solid var(--amber); padding: 11px 13px; border-radius: 8px; }
 .status-pill { display: inline-block; padding: 3px 9px; color: #fff; border-radius: 99px; font-size: 11px; font-weight: 800; }
 .small-muted { color: var(--muted); font-size: 12px; }
 
-/* Buttons */
-.btn-primary { background-color: var(--primary); border-color: var(--primary); color: #fff; }
-.btn-primary:hover { background-color: var(--primary-dark); border-color: var(--primary-dark); color: #fff; }
+.btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border-color: var(--primary); color: #fff; }
+.btn-primary:hover { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); border-color: var(--primary-dark); color: #fff; }
 
 .nav-tabs-custom > .nav-tabs > li.active { border-top-color: var(--primary); }
-#shiny-tab-analysis .recalculating {
-  opacity: 1 !important;
-  transition: none !important;
-}
+#shiny-tab-analysis .recalculating { opacity: 1 !important; transition: none !important; }
 
 @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 680px) { .kpi-grid { grid-template-columns: 1fr; } .data-banner { display:block; } }
@@ -129,27 +136,35 @@ app_css <- "
 ui <- shinydashboard::dashboardPage(
   skin = "blue",
   shinydashboard::dashboardHeader(
-    title = "ALIVE Project",
+    title = shiny::tags$div(
+      style = "display: flex; align-items: center; justify-content: center; height: 100%;",
+      shiny::tags$img(
+        src = "logo.png",
+        alt = "ALIVE logo",
+        height = "34px",
+        style = "margin-right: 10px;"
+      ),
+      shiny::tags$span(
+        "ALIVE",
+        style = "font-weight: bold; font-size: 20px; color: white;"
+      )
+    ),
     titleWidth = 250
   ),
   shinydashboard::dashboardSidebar(
     width = 250,
-    shinydashboard::sidebarMenu(
-      id = "main_tab",
-      shinydashboard::menuItem("Overview", tabName = "overview", icon = shiny::icon("gauge-high")),
-      shinydashboard::menuItem("Alerts & Analysis", tabName = "analysis", icon = shiny::icon("triangle-exclamation")),
-      shinydashboard::menuItem("Diseases", tabName = "diseases", icon = shiny::icon("virus")),
-      # Nested M&A Parent Menu
-      shinydashboard::menuItem(
-        "M&A", 
-        icon = shiny::icon("chart-line"), 
-        startExpanded = FALSE,
-        shinydashboard::menuItem("Completeness", tabName = "completeness", icon = shiny::icon("list-check")),
-        shinydashboard::menuItem("Data Entry", tabName = "entry", icon = shiny::icon("keyboard"))
-      ),
-      shinydashboard::menuItem("Data & Method", tabName = "data", icon = shiny::icon("database"))
+    shiny::tags$div(
+      style = "padding: 10px 12px 6px;",
+      shiny::selectInput(
+        "language_selector",
+        label = shiny::tags$span(style = "color: #eaf5ff; font-size: 12px; font-weight: 700;", "Idioma / Language"),
+        choices = c("Português (PT)" = "pt", "English (EN)" = "en"),
+        selected = "pt",
+        width = "100%"
+      )
     ),
-    shiny::tags$div(class = "sidebar-section-title", "Global Filters"),
+    shinydashboard::sidebarMenuOutput("main_sidebar_menu"),
+    shiny::uiOutput("global_filters_title"),
     shiny::uiOutput("date_filter"),
     shiny::uiOutput("province_filter"),
     shiny::uiOutput("district_filter"),
@@ -160,12 +175,11 @@ ui <- shinydashboard::dashboardPage(
     shiny::uiOutput("age_filter"),
     shiny::uiOutput("sex_filter"),
     shiny::selectInput(
-      "period_unit", "Periodicity",
-      choices = c("Daily" = "day", "Weekly" = "week", "Monthly" = "month"),
+      "period_unit", "Periodicidade",
+      choices = c("Diária" = "day", "Semanal" = "week", "Mensal" = "month"),
       selected = "week"
     ),
-    
-    shiny::actionButton("reset_filters", "Clear Filters", icon = shiny::icon("rotate-left")),
+    shiny::uiOutput("reset_filters_button"),
     shiny::br(), shiny::br()
   ),
   shinydashboard::dashboardBody(
@@ -173,11 +187,7 @@ ui <- shinydashboard::dashboardPage(
       shiny::tags$style(shiny::HTML(app_css)),
       shiny::tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")
     ),
-    shiny::h2(class = "dashboard-title", "ALIVE — Integrated Disease Surveillance"),
-    shiny::p(
-      class = "dashboard-subtitle",
-      "Data quality, outbreak signals, service access & continuity, vulnerability, and facility performance variation."
-    ),
+    shiny::uiOutput("app_header_texts"),
     shiny::uiOutput("data_banner"),
     shinydashboard::tabItems(
       

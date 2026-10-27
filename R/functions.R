@@ -103,25 +103,65 @@ parse_datetime_flexible <- function(x) {
 }
 
 read_monitor_data <- function(path) {
-  if (!file.exists(path)) {
-    stop(
-      paste0(
-        "Ficheiro não encontrado: ", path,
-        ". Coloque o CSV em data-raw/dados_processados.csv ou carregue-o no painel."
-      ),
-      call. = FALSE
-    )
+  load_dataset_file(path, default_message = "Ficheiro não encontrado: %s. Coloque o CSV em data-raw/dados_processados.csv ou carregue-o no painel.")
+}
+
+load_dataset_file <- function(path, default_message = "Ficheiro não encontrado: %s.", reader = readr::read_csv, ...) {
+  resolved_path <- if (is.null(path) || !nzchar(path)) "" else path
+
+  if (!file.exists(resolved_path)) {
+    stop(sprintf(default_message, resolved_path), call. = FALSE)
   }
 
-  readr::read_csv(
-    path,
+  reader(
+    resolved_path,
     col_types = readr::cols(.default = readr::col_character()),
     na = c("", "NA", "N/A", "NULL", "null"),
     trim_ws = TRUE,
     show_col_types = FALSE,
     progress = FALSE,
-    name_repair = "unique"
+    name_repair = "unique",
+    ...
   )
+}
+
+read_agregados_data <- function(path = AGREGADOS_DATA_PATH) {
+  load_dataset_file(
+    path,
+    sprintf("Ficheiro não encontrado: %s. Verifique a variável AGREGADOS_DATA_PATH.", path)
+  )
+}
+
+read_sara_geo_data <- function(path = SARA_GEO_DATA_PATH) {
+  geo <- load_dataset_file(
+    path,
+    sprintf("Ficheiro não encontrado: %s. Verifique a variável SARA_GEO_DATA_PATH.", path),
+    reader = readr::read_csv
+  )
+
+  code_col <- intersect(c("SIS_CODE", "sis_code", "facility_code", "oucode", "codigo_us", "codigo"), names(geo))[1]
+  lat_col <- intersect(c("Lat", "lat", "latitude", "Latitude"), names(geo))[1]
+  lon_col <- intersect(c("Long", "long", "longitude", "Longitude", "Lng", "lng"), names(geo))[1]
+
+  if (is.na(code_col) || is.na(lat_col) || is.na(lon_col)) {
+    warning(
+      "Coordenadas SARA sem colunas obrigatórias (código, latitude, longitude). Verifique o ficheiro de coordenadas.",
+      call. = FALSE
+    )
+    return(tibble::tibble(SIS_CODE = character(), latitude = numeric(), longitude = numeric()))
+  }
+
+  geo |>
+    dplyr::mutate(
+      SIS_CODE = clean_character(.data[[code_col]]),
+      latitude_raw = gsub(",", ".", as.character(.data[[lat_col]]), fixed = TRUE),
+      longitude_raw = gsub(",", ".", as.character(.data[[lon_col]]), fixed = TRUE),
+      latitude = suppressWarnings(readr::parse_number(latitude_raw, locale = readr::locale(decimal_mark = "."))),
+      longitude = suppressWarnings(readr::parse_number(longitude_raw, locale = readr::locale(decimal_mark = ".")))
+    ) |>
+    dplyr::filter(has_value(SIS_CODE), is.finite(latitude), is.finite(longitude)) |>
+    dplyr::select(SIS_CODE, latitude, longitude) |>
+    dplyr::distinct(SIS_CODE, .keep_all = TRUE)
 }
 
 map_to_canonical <- function(raw) {

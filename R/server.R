@@ -6,10 +6,98 @@ server <- function(input, output, session) {
 
   library(readr)     # <--- Garante a função read_csv
   library(dplyr)
-  # No server.R
+
+  lang <- shiny::reactive({
+    if (is.null(input$language_selector) || identical(input$language_selector, "")) "pt" else input$language_selector
+  })
+
+  txt <- function(key, fallback = NULL) {
+    translations <- list(
+      base_not_loaded = c(pt = "Base não carregada", en = "Dataset not loaded"),
+      use_csv = c(pt = "Use ‘Carregar novo CSV’ na barra lateral.", en = "Use ‘Upload new CSV’ in the sidebar."),
+      records = c(pt = "Registos do Alive Form", en = "Alive Form records"),
+      updated_at = c(pt = "Atualizado em", en = "Updated at"),
+      event_period = c(pt = "Período do evento", en = "Event period"),
+      province = c(pt = "Província", en = "Province"),
+      consultation_type = c(pt = "Tipo de Consulta", en = "Consultation type"),
+      district = c(pt = "Distrito", en = "District"),
+      facility = c(pt = "Unidade sanitária", en = "Health facility"),
+      disease = c(pt = "Doença/diagnóstico", en = "Disease/diagnosis"),
+      age_group = c(pt = "Faixa etária", en = "Age group"),
+      sex = c(pt = "Sexo", en = "Sex"),
+      periodicity = c(pt = "Periodicidade", en = "Periodicity"),
+      clear_filters = c(pt = "Limpar filtros", en = "Clear filters"),
+      no_data = c(pt = "Sem dados para os filtros seleccionados", en = "No data for the selected filters"),
+      app_title = c(pt = "ALIVE — Vigilância Integrada de Doenças", en = "ALIVE — Integrated Disease Surveillance"),
+      app_subtitle = c(pt = "Qualidade dos dados, sinais de surtos, acesso e continuidade dos serviços, vulnerabilidade e variação de desempenho das unidades de saúde.", en = "Data quality, outbreak signals, service access and continuity, vulnerability, and facility performance variation."),
+      global_filters = c(pt = "Filtros globais", en = "Global filters"),
+      overview = c(pt = "Visão geral", en = "Overview"),
+      alerts_analysis = c(pt = "Alertas e análise", en = "Alerts & analysis"),
+      diseases = c(pt = "Doenças", en = "Diseases"),
+      quality = c(pt = "Qualidade & dados", en = "Quality & data"),
+      completeness = c(pt = "Completude", en = "Completeness"),
+      entry = c(pt = "Registo", en = "Data entry"),
+      data_method = c(pt = "Dados e método", en = "Data & method"),
+      to = c(pt = "até", en = "to"),
+      period_unit_day = c(pt = "Diária", en = "Daily"),
+      period_unit_week = c(pt = "Semanal", en = "Weekly"),
+      period_unit_month = c(pt = "Mensal", en = "Monthly")
+    )
+
+    val <- translations[[key]]
+    if (is.null(val)) return(fallback %||% key)
+    if (identical(lang(), "en")) val[["en"]] else val[["pt"]]
+  }
+
+  output$main_sidebar_menu <- shinydashboard::renderMenu({
+    shinydashboard::sidebarMenu(
+      id = "main_tab",
+      shinydashboard::menuItem(txt("overview"), tabName = "overview", icon = shiny::icon("gauge-high")),
+      shinydashboard::menuItem(txt("alerts_analysis"), tabName = "analysis", icon = shiny::icon("triangle-exclamation")),
+      shinydashboard::menuItem(txt("diseases"), tabName = "diseases", icon = shiny::icon("virus")),
+      shinydashboard::menuItem(
+        txt("quality"),
+        icon = shiny::icon("chart-line"),
+        startExpanded = FALSE,
+        shinydashboard::menuItem(txt("completeness"), tabName = "completeness", icon = shiny::icon("list-check")),
+        shinydashboard::menuItem(txt("entry"), tabName = "entry", icon = shiny::icon("keyboard"))
+      ),
+      shinydashboard::menuItem(txt("data_method"), tabName = "data", icon = shiny::icon("database"))
+    )
+  })
+
+  output$global_filters_title <- shiny::renderUI({
+    shiny::tags$div(class = "sidebar-section-title", txt("global_filters"))
+  })
+
+  output$reset_filters_button <- shiny::renderUI({
+    shiny::actionButton("reset_filters", txt("clear_filters"), icon = shiny::icon("rotate-left"))
+  })
+
+  output$app_header_texts <- shiny::renderUI({
+    shiny::tagList(
+      shiny::h2(class = "dashboard-title", txt("app_title")),
+      shiny::p(class = "dashboard-subtitle", txt("app_subtitle"))
+    )
+  })
+
+  shiny::observe({
+    if (!is.null(input$language_selector)) {
+      choice_values <- c("day", "week", "month")
+      choice_names <- c(txt("period_unit_day"), txt("period_unit_week"), txt("period_unit_month"))
+      shiny::updateSelectInput(
+        session,
+        "period_unit",
+        label = txt("periodicity"),
+        choices = stats::setNames(choice_values, choice_names)
+      )
+    }
+  })
+
+  # Centraliza a leitura dos ficheiros CSV para reduzir dependência de caminhos
+  # fixos espalhados pela aplicação e facilitar futuras correções de manutenção.
   dados <- shiny::reactive({
-    # Ou use a função nativa do R base que não requer bibliotecas externas:
-    dados <- read.csv("data-raw/AGREGADOS.csv", stringsAsFactors = FALSE)
+    read_agregados_data(AGREGADOS_DATA_PATH)
   })
   
 
@@ -109,8 +197,12 @@ server <- function(input, output, session) {
     }
 
     tryCatch(
-      list(data = read_monitor_data(path), path = path, label = label, error = NULL),
-      error = function(e) list(data = NULL, path = path, label = label, error = conditionMessage(e))
+      {
+        list(data = read_monitor_data(path), path = path, label = label, error = NULL)
+      },
+      error = function(e) {
+        list(data = NULL, path = path, label = label, error = conditionMessage(e))
+      }
     )
   })
 
@@ -129,25 +221,25 @@ server <- function(input, output, session) {
     if (!is.null(source$error)) {
       return(shiny::tags$div(
         class = "data-banner", style = "background:#fff0f0;border-color:#f1c2c2;color:#8f2525;",
-        shiny::tags$div(shiny::icon("circle-exclamation"), shiny::strong(" Base não carregada: "), source$error),
-        shiny::tags$span(class = "small-muted", "Use ‘Carregar novo CSV’ na barra lateral.")
+        shiny::tags$div(shiny::icon("circle-exclamation"), shiny::strong(paste0(" ", txt("base_not_loaded"), ": ")), source$error),
+        shiny::tags$span(class = "small-muted", txt("use_csv"))
       ))
     }
 
     x <- base_data()
     valid_dates <- x$event_date[!is.na(x$event_date)]
     range_text <- if (length(valid_dates)) {
-      paste(format(min(valid_dates), "%d/%m/%Y"), "a", format(max(valid_dates), "%d/%m/%Y"))
+      paste(format(min(valid_dates), "%d/%m/%Y"), txt("to"), format(max(valid_dates), "%d/%m/%Y"))
     } else {
       "datas não reconhecidas"
     }
     shiny::tags$div(
       class = "data-banner",
       shiny::tags$div(
-        shiny::icon("database"), shiny::strong(paste0("Registos do Alive Form: ")),
+        shiny::icon("database"), shiny::strong(paste0(txt("records"), ": ")),
         paste0(" · ", fmt_number(nrow(x)), " registos · ", range_text)
       ),
-      shiny::tags$span(class = "small-muted", paste("Actualizado no painel:", format(Sys.time(), "%d/%m/%Y %H:%M")))
+      shiny::tags$span(class = "small-muted", paste0(txt("updated_at"), ": ", format(Sys.time(), "%d/%m/%Y %H:%M")))
     )
   })
 
@@ -159,28 +251,28 @@ server <- function(input, output, session) {
     min_date <- min(valid_dates)
     max_date <- max(valid_dates)
     shiny::dateRangeInput(
-      "date_range", "Período do evento",
+      "date_range", txt("event_period"),
       start = min_date, end = max_date,
       min = min_date, max = max(Sys.Date(), max_date),
-      format = "dd/mm/yyyy", separator = " até ", language = "pt"
+      format = "dd/mm/yyyy", separator = paste0(" ", txt("to"), " "), language = if (identical(lang(), "en")) "en" else "pt"
     )
   })
 
   output$province_filter <- shiny::renderUI({
     choices <- sort(unique(base_data()$province[has_value(base_data()$province)]))
-    shiny::selectizeInput("province", "Província", choices = choices, multiple = TRUE)
+    shiny::selectizeInput("province", txt("province"), choices = choices, multiple = TRUE)
   })
   
   output$consultation_type_filter <- shiny::renderUI({
     choices <- sort(unique(base_data()$consultation_type[has_value(base_data()$consultation_type)]))
-    shiny::selectizeInput("consultation_type", "Tipo de Consulta", choices = choices, multiple = TRUE)
+    shiny::selectizeInput("consultation_type", txt("consultation_type"), choices = choices, multiple = TRUE)
   })
 
   output$district_filter <- shiny::renderUI({
     x <- base_data()
     if (!is.null(input$province) && length(input$province)) x <- x[x$province %in% input$province, ]
     choices <- sort(unique(x$district[has_value(x$district)]))
-    shiny::selectizeInput("district", "Distrito", choices = choices, multiple = TRUE)
+    shiny::selectizeInput("district", txt("district"), choices = choices, multiple = TRUE)
   })
 
   output$facility_filter <- shiny::renderUI({
@@ -188,22 +280,22 @@ server <- function(input, output, session) {
     if (!is.null(input$province) && length(input$province)) x <- x[x$province %in% input$province, ]
     if (!is.null(input$district) && length(input$district)) x <- x[x$district %in% input$district, ]
     choices <- sort(unique(x$facility[has_value(x$facility)]))
-    shiny::selectizeInput("facility", "Unidade sanitária", choices = choices, multiple = TRUE)
+    shiny::selectizeInput("facility", txt("facility"), choices = choices, multiple = TRUE)
   })
 
   output$disease_filter <- shiny::renderUI({
     choices <- sort(unique(base_data()$diagnosis_final[has_value(base_data()$diagnosis_final)]))
-    shiny::selectizeInput("disease", "Doença/diagnóstico", choices = choices, multiple = TRUE)
+    shiny::selectizeInput("disease", txt("disease"), choices = choices, multiple = TRUE)
   })
 
   output$age_filter <- shiny::renderUI({
     choices <- VALID_AGE_GROUPS[VALID_AGE_GROUPS %in% base_data()$age_group]
-    shiny::selectizeInput("age_group", "Faixa etária", choices = choices, multiple = TRUE)
+    shiny::selectizeInput("age_group", txt("age_group"), choices = choices, multiple = TRUE)
   })
 
   output$sex_filter <- shiny::renderUI({
     choices <- VALID_SEX[VALID_SEX %in% base_data()$sex]
-    shiny::selectizeInput("sex", "Sexo", choices = choices, multiple = TRUE)
+    shiny::selectizeInput("sex", txt("sex"), choices = choices, multiple = TRUE)
   })
 
   shiny::observeEvent(input$reset_filters, {
@@ -216,9 +308,10 @@ server <- function(input, output, session) {
     }
     
     # Adicionado "consultation_type" à lista de selectize inputs a reiniciar
-    for (id in c("province", "district", "facility", "disease", "age_group", "sex", "consultation_type")) {
+    filter_ids <- c("province", "district", "facility", "disease", "age_group", "sex", "consultation_type")
+    invisible(lapply(filter_ids, function(id) {
       shiny::updateSelectizeInput(session, id, selected = character(0))
-    }
+    }))
     
     shiny::updateSelectInput(session, "period_unit", selected = "week")
     shiny::updateNumericInput(session, "minimum_events", value = 1)
@@ -364,6 +457,13 @@ server <- function(input, output, session) {
   analysis_alert_data <- shiny::reactive({
     parameter <- input$alert_parameter %||% 2
     range <- current_range()
+    alert_method <- input$alert_method %||% "mean_sd"
+
+    standard_deviations <- if (alert_method == "mean_sd") parameter else 2
+    mad_multiplier <- if (alert_method == "median_mad") parameter else 3
+    percentile <- if (alert_method == "percentile") parameter / 100 else .95
+    growth_percent <- if (alert_method == "growth") parameter else 50
+
     outbreak_alert_series(
       analysis_universe_data(), range[1], range[2],
       unit = input$analysis_period_unit %||% "week",
@@ -372,14 +472,14 @@ server <- function(input, output, session) {
       combine_facilities = isTRUE(input$combine_facilities),
       group_name = input$analysis_group_name %||% "Grupo ALIVE seleccionado",
       exclude_duplicates = isTRUE(input$exclude_analysis_duplicates),
-      method = input$alert_method %||% "mean_sd",
+      method = alert_method,
       baseline_periods = input$baseline_periods %||% 8,
       minimum_history = min(input$minimum_history %||% 4, input$baseline_periods %||% 8),
       minimum_cases = input$minimum_cases_alert %||% 2,
-      standard_deviations = if ((input$alert_method %||% "mean_sd") == "mean_sd") parameter else 2,
-      mad_multiplier = if ((input$alert_method %||% "mean_sd") == "median_mad") parameter else 3,
-      percentile = if ((input$alert_method %||% "mean_sd") == "percentile") parameter / 100 else .95,
-      growth_percent = if ((input$alert_method %||% "mean_sd") == "growth") parameter else 50
+      standard_deviations = standard_deviations,
+      mad_multiplier = mad_multiplier,
+      percentile = percentile,
+      growth_percent = growth_percent
     )
   })
 
@@ -458,6 +558,12 @@ server <- function(input, output, session) {
   metrics <- shiny::reactive({
     x <- filtered_data()
     facilities <- facility_stats()
+    silent_facilities_count <- if (nrow(facilities) > 0L) {
+      sum(facilities$silent_periods > 0, na.rm = TRUE)
+    } else {
+      0L
+    }
+
     list(
       records = nrow(x),
       facilities = dplyr::n_distinct(x$facility[has_value(x$facility)]),
@@ -469,7 +575,7 @@ server <- function(input, output, session) {
       alert_rows = sum(x$issue_count > 0, na.rm = TRUE),
       high_alerts = sum(x$severity == "Alta", na.rm = TRUE),
       medium_alerts = sum(x$severity == "Média", na.rm = TRUE),
-      silent_facilities = if (nrow(facilities)) sum(facilities$silent_periods > 0, na.rm = TRUE) else 0,
+      silent_facilities = silent_facilities_count,
       anomalies = sum(outlier_data()$anomaly, na.rm = TRUE)
     )
   })
@@ -484,19 +590,20 @@ server <- function(input, output, session) {
   
   # Altere a definição da função para incluir color (com um valor padrão, ex: "#0277bd")
   make_kpi <- function(title, value, note = NULL, icon = NULL, color = "#0277bd", ...) {
-    
-    # Exemplo de estrutura HTML/Shiny com aplicação da cor no estilo do ícone ou cartão:
+    icon_tag <- if (!is.null(icon)) shiny::icon(icon) else NULL
+    note_tag <- if (!is.null(note)) shiny::div(class = "kpi-note", note) else NULL
+
     shiny::div(
       class = "kpi-card",
-      style = paste0("border-left: 4px solid ", color, ";"), # Exemplo de uso da cor na borda
+      style = paste0("border-left: 4px solid ", color, ";"),
       shiny::div(
         class = "kpi-icon",
-        style = paste0("color: ", color, ";"),               # Exemplo de uso da cor no ícone
-        if (!is.null(icon)) shiny::icon(icon)
+        style = paste0("color: ", color, ";"),
+        icon_tag
       ),
       shiny::div(class = "kpi-title", title),
       shiny::div(class = "kpi-value", value),
-      if (!is.null(note)) shiny::div(class = "kpi-note", note)
+      note_tag
     )
   }
   
@@ -694,80 +801,81 @@ server <- function(input, output, session) {
   
   
   
-  #Map cases 
+  #Map cases
   output$disease_map <- leaflet::renderLeaflet({
-    
-    # 1. Load and prepare SARA geographic coordinates
-    sara_geo_data <- readr::read_csv(
-      "data-raw/Coordenadas_Geograficas_SARA.csv", 
-      show_col_types = FALSE
-    ) %>%
-      dplyr::mutate(
-        SIS_CODE = as.character(SIS_CODE),
-        latitude = as.numeric(Lat),
-        longitude = as.numeric(Long)
-      ) %>%
-      dplyr::select(SIS_CODE, latitude, longitude) %>%
-      dplyr::distinct(SIS_CODE, .keep_all = TRUE)
-    
-    # 2. Extract active reactive dataset or fallback to hpt_data
-    df_raw <- if (exists("filtered_data") && is.reactive(filtered_data)) filtered_data() else hpt_data
-    
-    if (is.null(df_raw) || nrow(df_raw) == 0) return(NULL)
-    
-    # 3. Dynamic Column Matching for Disease/Diagnosis Name
-    possible_disease_cols <- c("disease", "doenca", "diagnostico", "agravo", "patologia", "disease_name")
-    matched_col <- intersect(possible_disease_cols, names(df_raw))[1]
-    
-    if (!is.na(matched_col)) {
-      df_raw <- df_raw %>% 
-        dplyr::mutate(disease = as.character(.data[[matched_col]]))
-    } else {
-      df_raw$disease <- "Não Especificado"
+    sara_geo_data <- read_sara_geo_data(SARA_GEO_DATA_PATH)
+    if (nrow(sara_geo_data) == 0) {
+      return(NULL)
     }
-    
-    # 4. Group and count cases by Health Facility AND Disease
-    cases_by_facility_disease <- df_raw %>%
+
+    df_raw <- filtered_data()
+
+    if (is.null(df_raw) || nrow(df_raw) == 0) {
+      return(NULL)
+    }
+
+    disease_col <- intersect(c("diagnosis_final", "disease", "doenca", "diagnostico", "agravo", "patologia", "disease_name"), names(df_raw))[1]
+    facility_col <- if ("facility" %in% names(df_raw)) "facility" else "facility_name"
+    facility_code_col <- if ("facility_code" %in% names(df_raw)) "facility_code" else NULL
+
+    df_raw <- df_raw %>%
       dplyr::mutate(
-        facility_code = as.character(facility_code),
-        disease = dplyr::coalesce(disease, "Não Especificado")
+        disease = if (!is.null(disease_col) && nzchar(disease_col)) as.character(.data[[disease_col]]) else "Não Especificado",
+        facility = if (facility_col %in% names(df_raw)) as.character(.data[[facility_col]]) else "N/A",
+        facility_code = if (!is.null(facility_code_col) && facility_code_col %in% names(df_raw)) as.character(.data[[facility_code_col]]) else NA_character_
       ) %>%
-      dplyr::filter(!is.na(facility_code)) %>%
+      dplyr::mutate(
+        disease = dplyr::coalesce(disease, "Não Especificado"),
+        facility_code = trimws(facility_code)
+      ) %>%
+      dplyr::filter(!is.na(facility_code) & nzchar(facility_code))
+
+    if (nrow(df_raw) == 0) {
+      return(NULL)
+    }
+
+    cases_by_facility_disease <- df_raw %>%
       dplyr::group_by(facility_code, disease) %>%
       dplyr::summarise(
         total_cases = dplyr::n(),
         facility_name = dplyr::first(facility),
         .groups = "drop"
       )
-    
-    # 5. Join aggregated cases with SARA coordinates
+
     map_data <- cases_by_facility_disease %>%
-      dplyr::left_join(sara_geo_data, by = c("facility_code" = "SIS_CODE")) %>%
+      dplyr::mutate(facility_code = as.character(facility_code)) %>%
+      dplyr::left_join(
+        sara_geo_data %>% dplyr::mutate(facility_code = as.character(SIS_CODE)),
+        by = "facility_code"
+      ) %>%
       dplyr::filter(!is.na(latitude) & !is.na(longitude))
-    
-    if (nrow(map_data) == 0) return(NULL)
-    
-    # 6. Define Categorical Color Palette for Diseases
+
+    if (nrow(map_data) == 0) {
+      return(NULL)
+    }
+
     unique_diseases <- unique(map_data$disease)
     pal_disease <- leaflet::colorFactor(
-      palette = "Set1", # Options: "Set1", "Set2", "Dark2", "Paired"
+      palette = c("#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F", "#EDC948", "#B07AA1", "#FF9DA7"),
       domain = unique_diseases
     )
-    
-    # Helper function for number formatting
-    format_num <- function(x) {
-      if (exists("fmt_number", mode = "function")) fmt_number(x) else format(x, big.mark = " ")
-    }
-    
-    # 7. Render Leaflet Map
+
+    map_data <- map_data %>%
+      dplyr::mutate(
+        popup_html = paste0(
+          "<div style='font-family: sans-serif; font-size: 13px;'>",
+          "<b>Unidade Sanitária: </b>", dplyr::coalesce(facility_name, "N/A"), "<br>",
+          "<b>Código US: </b>", facility_code, "<br>",
+          "<b>Doença / Agravo: </b><span style='color:", pal_disease(disease), ";font-weight:bold;'>", disease, "</span><br>",
+          "<b>Total de Casos: </b>", format(total_cases, big.mark = " "),
+          "</div>"
+        )
+      )
+
     leaflet::leaflet(map_data) %>%
-      # Add multiple base map options
-      leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron, group = "Light (CartoDB)") %>%
       leaflet::addProviderTiles(leaflet::providers$OpenStreetMap, group = "OpenStreetMap") %>%
       leaflet::addProviderTiles(leaflet::providers$CartoDB.DarkMatter, group = "Dark (CartoDB)") %>%
       leaflet::addProviderTiles(leaflet::providers$Esri.WorldImagery, group = "Satélite (Esri)") %>%
-      
-      # Add circle markers colored by disease
       leaflet::addCircleMarkers(
         lng = ~longitude,
         lat = ~latitude,
@@ -777,28 +885,17 @@ server <- function(input, output, session) {
         fillOpacity = 0.75,
         stroke = TRUE,
         weight = 1.5,
-        popup = ~paste0(
-          "<div style='font-family: sans-serif; font-size: 13px;'>",
-          "<b>Unidade Sanitária: </b>", dplyr::coalesce(facility_name, "N/A"), "<br>",
-          "<b>Código US: </b>", facility_code, "<br>",
-          "<b>Doença / Agravo: </b><span style='color:", pal_disease(disease), ";font-weight:bold;'>", disease, "</span><br>",
-          "<b>Total de Casos: </b>", sapply(total_cases, format_num),
-          "</div>"
-        )
+        popup = ~popup_html
       ) %>%
-      
-      # Add Disease Legend
       leaflet::addLegend(
         pal = pal_disease,
-        values = ~disease,
+        values = unique_diseases,
         title = "Doença / Agravo",
         position = "bottomright",
         opacity = 0.9
       ) %>%
-      
-      # Add Map Selector Control
       leaflet::addLayersControl(
-        baseGroups = c("Light (CartoDB)", "OpenStreetMap", "Dark (CartoDB)", "Satélite (Esri)"),
+        baseGroups = c("OpenStreetMap", "Dark (CartoDB)", "Satélite (Esri)"),
         options = leaflet::layersControlOptions(collapsed = FALSE),
         position = "topright"
       )
@@ -842,11 +939,15 @@ server <- function(input, output, session) {
         status = quality_band(completeness),
         text = paste0(label, "<br>Completude: ", fmt_pct(completeness), "<br>Ausentes: ", missing_n)
       )
+    label_pct <- function(v) paste0(v, "%")
     p <- ggplot2::ggplot(x, ggplot2::aes(completeness, label, fill = status, text = text)) +
       ggplot2::geom_col(width = .7) +
       ggplot2::geom_vline(xintercept = 90, linetype = "dashed", colour = "#64748b") +
       ggplot2::scale_fill_manual(values = c("Crítico" = "#c93c3c", "Atenção" = "#d99a00", "Bom" = "#38a169", "Excelente" = "#0f766e")) +
-      ggplot2::scale_x_continuous(limits = c(0, 100), labels = function(v) paste0(v, "%")) +
+      ggplot2::scale_x_continuous(
+        limits = c(0, 100),
+        labels = label_pct
+      ) +
       ggplot2::labs(x = "Completude", y = NULL) + monitor_theme(10)
     to_plotly(p)
   })
@@ -1027,7 +1128,7 @@ server <- function(input, output, session) {
   )
   
   # Ler os dados e aplicar os renomeamentos (any_of ignora colunas inexistentes)
-  hpt_data <- read_csv("data-raw/dados_processados.csv", show_col_types = FALSE) %>%
+  hpt_data <- read_monitor_data(DATA_PATH) %>%
     rename(any_of(field_map))
   
   # ==============================================================================
@@ -1930,7 +2031,9 @@ server <- function(input, output, session) {
   })
 
   output$download_denominator_template <- shiny::downloadHandler(
-    filename = function() "modelo_denominadores_us.csv",
+    filename = function() {
+      "modelo_denominadores_us.csv"
+    },
     content = function(file) {
       x <- analysis_universe_data() |>
         dplyr::distinct(facility_code, facility) |>
@@ -2014,14 +2117,18 @@ server <- function(input, output, session) {
   })
 
   output$download_csv <- shiny::downloadHandler(
-    filename = function() paste0("dados_monitoria_filtrados_", Sys.Date(), ".csv"),
+    filename = function() {
+      paste0("dados_monitoria_filtrados_", Sys.Date(), ".csv")
+    },
     content = function(file) {
       readr::write_excel_csv(safe_export_data(filtered_data()), file, na = "")
     }
   )
 
   output$download_alerts <- shiny::downloadHandler(
-    filename = function() paste0("alertas_qualidade_", Sys.Date(), ".csv"),
+    filename = function() {
+      paste0("alertas_qualidade_", Sys.Date(), ".csv")
+    },
     content = function(file) {
       readr::write_excel_csv(alerts_table(filtered_data()), file, na = "")
     }
